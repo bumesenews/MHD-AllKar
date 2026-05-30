@@ -1,0 +1,22 @@
+[Unit]
+Description=MHD Scraper API
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/mhd-api
+EnvironmentFile=/var/www/mhd-api/.env
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/mhd-api/cache
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target

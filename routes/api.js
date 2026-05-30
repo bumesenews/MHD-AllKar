@@ -1,8 +1,12 @@
 const express = require("express");
-const config = require("../config");
 const listScraper = require("../services/listScraper");
 const { scrapeWatch } = require("../services/watchScraper");
 const { parsePage, sendList, handleError } = require("../utils/httpResponse");
+const { watchLimiter } = require("../middleware/securityStack");
+const {
+  validateSectionId,
+  validateWatchUrl,
+} = require("../middleware/validateInput");
 
 const router = express.Router();
 
@@ -29,7 +33,7 @@ router.get("/api/model", async (_req, res) => {
   }
 });
 
-router.get("/api/model/:id", async (req, res) => {
+router.get("/api/model/:id", validateSectionId, async (req, res) => {
   try {
     const page = parsePage(req.query);
     const data = await listScraper.scrapeModelSection(req.params.id, page);
@@ -48,7 +52,7 @@ router.get("/api/tags", async (_req, res) => {
   }
 });
 
-router.get("/api/tags/:id", async (req, res) => {
+router.get("/api/tags/:id", validateSectionId, async (req, res) => {
   try {
     const page = parsePage(req.query);
     const data = await listScraper.scrapeTagSection(req.params.id, page);
@@ -67,7 +71,7 @@ router.get("/api/channel", async (_req, res) => {
   }
 });
 
-router.get("/api/channel/:id", async (req, res) => {
+router.get("/api/channel/:id", validateSectionId, async (req, res) => {
   try {
     const page = parsePage(req.query);
     const data = await listScraper.scrapeChannelSection(req.params.id, page);
@@ -77,33 +81,9 @@ router.get("/api/channel/:id", async (req, res) => {
   }
 });
 
-router.get("/api/watch", async (req, res) => {
+router.get("/api/watch", watchLimiter, validateWatchUrl, async (req, res) => {
   try {
-    const rawUrl = req.query.url;
-    if (!rawUrl || typeof rawUrl !== "string") {
-      return res.status(400).json({
-        error: true,
-        message: "Query parameter `url` is required (URL-encoded watch page URL)",
-        code: "MISSING_URL",
-      });
-    }
-
-    let watchPageUrl;
-    try {
-      watchPageUrl = decodeURIComponent(rawUrl.trim());
-    } catch {
-      return res.status(400).json({
-        error: true,
-        message: "Invalid URL encoding in `url` parameter",
-        code: "INVALID_URL",
-      });
-    }
-
-    if (!/^https?:\/\//i.test(watchPageUrl)) {
-      watchPageUrl = config.resolveUrl(watchPageUrl);
-    }
-
-    const data = await scrapeWatch(watchPageUrl);
+    const data = await scrapeWatch(req.watchPageUrl);
     res.json(data);
   } catch (err) {
     handleError(res, err);

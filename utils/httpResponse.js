@@ -1,6 +1,9 @@
+const security = require("../config/security");
+
 function parsePage(query) {
   const page = parseInt(String(query.page || "1"), 10);
-  return Number.isFinite(page) && page > 0 ? page : 1;
+  if (!Number.isFinite(page) || page < 1) return 1;
+  return Math.min(page, security.maxPage);
 }
 
 function sendList(res, data) {
@@ -17,11 +20,19 @@ function handleError(res, err) {
           ? 502
           : 500;
 
-  res.status(status).json({
+  const payload = {
     error: true,
-    message: err.message || "Request failed",
     code: err.code || "INTERNAL_ERROR",
-  });
+  };
+
+  if (security.isProduction) {
+    payload.message =
+      status === 500 ? "Internal server error" : err.message || "Request failed";
+  } else {
+    payload.message = err.message || "Request failed";
+  }
+
+  res.status(status).json(payload);
 }
 
 module.exports = {

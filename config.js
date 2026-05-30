@@ -3,8 +3,11 @@
  * Update selectors here when the target site changes layout — no core code edits needed.
  */
 
-const BASE_URL = "https://www.tubev.sex";
+require("dotenv").config();
 
+const security = require("./config/security");
+
+const BASE_URL = process.env.SCRAPE_BASE_URL || "https://www.tubev.sex";
 /** @param {string} pathOrUrl */
 function resolveUrl(pathOrUrl) {
   if (!pathOrUrl) return BASE_URL;
@@ -67,8 +70,9 @@ function sectionUrl(listUrl, id, page) {
 }*/
 
 module.exports = {
-  port: Number(process.env.PORT) || 3000,
-  host: process.env.HOST || "0.0.0.0",
+  port: security.port,
+  host: security.host,
+  security,
 
   baseUrl: BASE_URL,
 
@@ -84,10 +88,10 @@ module.exports = {
   },
 
   cache: {
-    ttlSeconds: 0,//8 * 60 * 60,
-    checkperiodSeconds: 60,//600,
-    cronExpression: "0 0 31 2 *",//"0 */8 * * *",
-    persistPath: "./cache/store.json",
+    ttlSeconds: Number(process.env.CACHE_TTL_SECONDS) || 8 * 60 * 60,
+    checkperiodSeconds: Number(process.env.CACHE_CHECK_PERIOD) || 600,
+    cronExpression: process.env.CACHE_CRON || "0 */8 * * *",
+    persistPath: process.env.CACHE_PATH || "./cache/store.json",
   },
 
   pagination: {
@@ -111,7 +115,7 @@ module.exports = {
       listUrl: "https://www.tubev.sex/",
       list: ".thumbs-layout figure",
       title: { selector: "img", attr: "alt" },
-      img: { selector: "img", attr: "src " },
+      img: { selector: "img", attr: "src" },
       link: { selector: "a", attr: "href" },
       section: {
         getUrl: (id, page) => sectionUrl("https://www.tubev.sex/", id, page),
